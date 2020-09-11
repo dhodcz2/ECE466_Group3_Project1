@@ -1,0 +1,13 @@
+# 15 -> 5
+# 14 -> 7
+# 13 -> 13
+
+INPUT(a)
+INPUT(b)
+INPUT(c)
+INPUT(d)
+
+OUTPUT(A)
+OUTPUT(B)
+OUTPUT(C)
+OUTPUT(D)
