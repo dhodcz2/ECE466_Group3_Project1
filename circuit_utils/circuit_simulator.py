@@ -1,7 +1,6 @@
 from _collections import OrderedDict
-from circuit_simulator import nodes
-from circuit_simulator import exceptions
-
+from circuit_utils import nodes
+from circuit_utils import exceptions
 from re import match
 
 
@@ -35,7 +34,7 @@ class CircuitSimulator(object):
                 name = groups[0]
                 if match[0] == "INPUT":
                     self.input_names.append(name)
-                    self.gates.append(Gate(name))
+                    self.gates.append(nodes.Gate(name))
                 elif match[0] == "OUTPUT":
                     self.output_names.append(name)
                 else:
@@ -116,7 +115,7 @@ class CircuitSimulator(object):
 
     def compile(self, lineparser: LineParser):
         for gate in lineparser.gates:
-            node = Node(gate)
+            node = nodes.Node(gate)
             if node.name in lineparser.input_names:
                 node.type = 'input'
                 self.nodes.input_nodes.update({node.name: node})
@@ -138,7 +137,7 @@ class CircuitSimulator(object):
         if not line:
             return False
         for character, node in zip(line, self.nodes.input_nodes):
-            node.set(Value(character))
+            node.set(nodes.Value(character))
         return True
 
     def simulate(self):
