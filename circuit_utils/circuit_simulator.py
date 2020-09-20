@@ -6,40 +6,41 @@ from re import match
 
 class CircuitSimulator(object):
     class LineParser(object):
-        def __init__(self):
-            self.file = CircuitSimulator.args.bench
+        def __init__(self, bench):
+            self.file = bench
             self.pattern_gate = "(\S+) = ([A-Z]+)\((.+)\)"
             self.pattern_io = "([A-Z]+)\((.+)\)"
             self.gates = []
             self.input_names = []
             self.output_names = []
-            self.gate_map = {"AND": nodes.And, "OR": nodes.Or, "NAND": nodes.Nand, "XNOR": nodes.Xnor,
-                             "NOR": nodes.Nor, "BUFF": nodes.Buff, "XOR": nodes.Xor, "NOT": nodes.Not}
+            self.gate_map = {"AND": nodes.AndGate, "OR": nodes.OrGate, "NAND": nodes.NandGate, "XNOR": nodes.XnorGate,
+                             "NOR": nodes.NorGate, "BUFF": nodes.BuffGate, "XOR": nodes.XorGate, "NOT": nodes.NotGate}
 
         def parse_file(self):
             with open(self.file) as f:
                 for line in f:
-                    self.parse_Line(f)
+                    self.parse_line(line)
             return self
 
         def parse_line(self, line: str):
             if groups := match(self.pattern_gate, line):
-                name = groups[0]
-                gate_type = self.gate_map[groups[1]]
+                name = groups.group(1)
+                gate_type = self.gate_map[groups.group(2)]
                 if not gate_type:
                     raise exceptions.ParseLineError(line)
-                inputs = groups[2].split(', ')
+                inputs = groups.group(3).split(', ')
                 self.gates.append(gate_type(name, inputs))
             elif groups := match(self.pattern_io, line):
-                name = groups[0]
-                if match[0] == "INPUT":
+                io = groups.group(1)
+                name = groups.group(2)
+                if io == "INPUT":
                     self.input_names.append(name)
                     self.gates.append(nodes.Gate(name))
-                elif match[0] == "OUTPUT":
+                elif io == "OUTPUT":
                     self.output_names.append(name)
                 else:
                     raise exceptions.ParseLineError(line)
-            elif line.startswith('#') or line == '':
+            elif line.startswith('#') or line == '\n':
                 pass
             else:
                 raise exceptions.ParseLineError(line)
@@ -62,18 +63,18 @@ class CircuitSimulator(object):
         def __getitem__(self, item: nodes.Node):
             if item in self.intermediate_nodes:
                 return self.intermediate_nodes[item]
-            if item in self.input_nodes:
+            elif item in self.input_nodes:
                 return self.input_nodes[item]
-            if item in self.output_nodes:
+            elif item in self.output_nodes:
                 return self.output_nodes[item]
             return KeyError
 
         def __iter__(self):
-            for node in self.input_nodes:
+            for node in self.input_nodes.values():
                 yield node
-            for node in self.intermediate_nodes:
+            for node in self.intermediate_nodes.values():
                 yield node
-            for node in self.output_nodes:
+            for node in self.output_nodes.values():
                 yield node
 
         def __str__(self):
@@ -85,35 +86,36 @@ class CircuitSimulator(object):
     def __init__(self, args):
         self.nodes = self.Nodes()
         self.args = args
-        self.parser = self.LineParser()
-        self.compile(self.parser.parse())
-
-    def __iter__(self):
-        self.stop_iterating = False
-        return self
+        self.parser = self.LineParser(args.bench)
+        self.compile(self.parser.parse_file())
 
     def __next__(self):
+        if self.iteration == 0:
+            self.iteration += 1
+            return "Inital values:" + str(self.nodes)
+        self.iteration += 1
         updated_nodes = 0
-        if self.stop_iterating:
-            for node in self.nodes:
-                node.reset()
-            raise StopIteration
-        for node in nodes:
+        for node in self.nodes:
             node.logic()
             if node.value != node.value_new:
                 updated_nodes += 1
-            if updated_nodes == 0:
-                self.stop_iterating = True
-        for node in nodes:
+        if updated_nodes == 0:
+            raise StopIteration
+        for node in self.nodes:
             node.update()
-        return str(nodes)
+        return "Iteration # " + str(self.iteration) + ": " + str(self.nodes)
+
+    def __iter__(self):
+        self.iteration = 0
+        return self
 
     def __str__(self):
         string = ''
-        for node in self:
+        for node in self.nodes:
             string += f"{node}\n"
 
     def compile(self, lineparser: LineParser):
+        # Compile a list of nodes from the parsed gates
         for gate in lineparser.gates:
             node = nodes.Node(gate)
             if node.name in lineparser.input_names:
@@ -124,30 +126,42 @@ class CircuitSimulator(object):
                 self.nodes.output_nodes.update({node.name: node})
             else:
                 self.nodes.intermediate_nodes.update({node.name: node})
+        # Update Node member vectors input_nodes and output_nodes, which hold references to connected nodes
         for node in self.nodes:
             for input_name in node.input_names:
                 self.nodes[node.name].input_nodes.append(self.nodes[input_name])
-                self.nodes[input_name].outpud_nodes.apppend(self.nodes[node.name])
+                self.nodes[input_name].output_nodes.append(self.nodes[node.name])
 
     def prompt(self):
-        for node in self:
+        for node in self.nodes.input_nodes:
             print(node)
-        print("---------------")
-        line = input("Start simulation with input values (return to exit):")
+        print()
+        line = self.args.testvec
         if not line:
-            return False
-        for character, node in zip(line, self.nodes.input_nodes):
+            line = input("Start simulation with input values (return to exit):")
+            if not line:
+                return False
+        for character, node in zip(line, self.nodes.input_nodes.values()):
             node.set(nodes.Value(character))
         return True
 
     def simulate(self):
         if self.args.verbose:
-            print('Simulating with the following input values')
-            for node in self.nodes.input_nodes:
+            print('Simulating with the following input values:')
+            for node in self.nodes.input_nodes.values():
                 print(node)
+            print()
         for iteration in self:
             if self.args.verbose:
-                print(iteration)
+                print(iteration, "\n")
+
+    def create_fault(self):
+        #     TODO: Prompt the user for for faulty node, and SA-0 or SA-1
+        pass
+
+    def detect_fault(self):
+        #     TODO: Detect any faults that have propagated to the outputs
+        pass
 
     def reset(self):
         for node in self.nodes:

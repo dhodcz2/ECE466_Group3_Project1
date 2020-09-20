@@ -1,6 +1,11 @@
+import copy
 class Value(object):
+    # TODO: Add D and D' to possible values to support fault propagation
     def __init__(self, value: str):
-        value = value.upper()
+        try:
+            value = value.upper()
+        except AttributeError:
+            pass
         if value == 0 or value == '0':
             self.value = 0
         elif value == 1 or value == '1':
@@ -12,7 +17,7 @@ class Value(object):
         if self.value == 1:
             if other == 1 or other == '1':
                 return True
-        elif self.value == 1:
+        elif self.value == 0:
             if other == 0 or other == '0':
                 return True
         elif self.value == 'U':
@@ -46,44 +51,16 @@ class Value(object):
         return str(self.value)
 
 
-class Node(object):
-    def __init__(self, gate: Gate):
-        self.name = gate.name
-        self.gate_type = gate.type
-        self.update = gate.update
-        self.logic = gate.logic
-        self.input_names = gate.input_names
-        self.value_new = gate.value_new
-        self.value = gate.value
-        self.type = 'wire'
-        self.input_nodes = []
-        self.output_nodes = []
-
-    def __eq__(self, other):
-        if self.value == other:
-            return True
-        return False
-
-    def __str__(self):
-        return f"{str(self.type):6}\t{str(self.name):5} = {self.value:^4}"
-
-    def reset(self):
-        self.value = Value('U')
-        self.value_new = Value('U')
-
-    def set(self, value:Value):
-        self.value = value
-        self.value_new = value
-
 class Gate(object):
-    def __init__(self, name: str, inputs: []):
+    def __init__(self, name: str, inputs=[]):
         self.input_names = inputs
         self.input_nodes = []
         self.output_nodes = []
         self.name = name
         self.value = Value('U')
         self.value_new = Value('U')
-        self.type = "wire"
+        self.type = None
+        self.logic = self.logic
 
     def update(self):
         self.value = self.value_new
@@ -92,9 +69,75 @@ class Gate(object):
         # Do not change
         pass
 
-class And(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(And, self).__init__(name, inputs)
+class Node(object):
+# class Node(object):
+    def __init__(self, gate: Gate):
+        self.gate = gate
+        self.name = gate.name
+        self.gate_type = gate.type
+        self.update = gate.update
+        self.logic = gate.logic
+        self.input_names = gate.input_names
+        self.value = gate.value
+        self.type = 'wire'
+        self.output_nodes = gate.output_nodes
+        self.input_nodes = gate.input_nodes
+
+    @property
+    def value_new(self):
+        return self.gate.value_new
+
+    @property
+    def value(self):
+        return self.gate.value
+
+    @value.setter
+    def value(self, other:Value):
+        self.gate.value = other
+
+    @value_new.setter
+    def value_new(self, other: Value):
+        self.gate.value_new = other
+
+
+
+
+    # @property
+    # def gate(self):
+    #     return self._gate
+        # self.name = gate.name
+        # self.gate_type = gate.type
+        # self.update = gate.update
+        # self.logic = gate.logic
+        # self.input_names = gate.input_names
+        # self.value_new = gate.value_new
+        # self.value = gate.value
+        # self.type = 'wire'
+        # self.input_nodes = gate.input_nodes
+        # self.output_nodes = gate.output_nodes
+
+    def __eq__(self, other):
+        if self.value == other:
+            return True
+        return False
+
+    def __str__(self):
+        # TODO: Improve the readout of node information
+        return f"{str(self.type)}\t{str(self.name)} = {self.value}"
+
+    def reset(self):
+        self.value = Value('U')
+        self.value_new = Value('U')
+
+    def set(self, value: Value):
+        self.value = value
+        self.value_new = value
+
+
+# TODO: Add D-logic support for the different gates
+class AndGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(AndGate, self).__init__(name, inputs)
         self.type = "AND"
 
     def logic(self):
@@ -106,9 +149,9 @@ class And(object, Gate):
             self.value_new = Value('U')
 
 
-class Or(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Or, self).__init__(name, inputs)
+class OrGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(OrGate, self).__init__(name, inputs)
         self.type = "OR"
 
     def logic(self):
@@ -120,9 +163,9 @@ class Or(object, Gate):
             self.value_new = Value(0)
 
 
-class Nand(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Nand, self).__init__(name, inputs)
+class NandGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(NandGate, self).__init__(name, inputs)
         self.type = "NAND"
 
     def logic(self):
@@ -133,18 +176,18 @@ class Nand(object, Gate):
         self.value_new = Value(0)
 
 
-class Not(object, Gate):
-   def __init__(self, name, inputs:[]):
-       super(Not, self).__init__(name, inputs)
-       self.type = "NOT"
+class NotGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(NotGate, self).__init__(name, inputs)
+        self.type = "NOT"
 
     def logic(self):
         self.value_new = ~self.input_nodes[0].value
 
 
-class Xnor(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Xnor, self).__init__(name, inputs)
+class XnorGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(XnorGate, self).__init__(name, inputs)
         self.type = "XNOR"
 
     def logic(self):
@@ -152,18 +195,19 @@ class Xnor(object, Gate):
         # TDDO: logic
 
 
-class Xor(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Xor, self).__init__(name, inputs)
+class XorGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(XorGate, self).__init__(name, inputs)
         self.type = "XOR"
 
     def logic(self):
         pass
         # TODO: logic
 
-class Nor(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Nor, self).__init__(name, inputs)
+
+class NorGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(NorGate, self).__init__(name, inputs)
         self.type = "NOR"
 
     def logic(self):
@@ -174,9 +218,9 @@ class Nor(object, Gate):
         self.value_new = Value(1)
 
 
-class Buff(object, Gate):
-    def __init__(self, name, inputs:[]):
-        super(Buff, self).__init__(name, inputs)
+class BuffGate(Gate):
+    def __init__(self, name, inputs: []):
+        super(BuffGate, self).__init__(name, inputs)
         self.type = "BUFF"
 
     def logic(self):
