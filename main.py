@@ -12,6 +12,8 @@ if __name__ == '__main__':
     simulator = circuit_simulator.CircuitSimulator(args)
     simulator.prompt()
     simulator.simulate()
+    if simulator.run_fault:
+        simulator.detect_fault()
     # while simulator.prompt():
     #     simulator.simulate()
     print("Finished -- bye!")
