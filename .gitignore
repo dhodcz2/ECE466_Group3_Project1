@@ -1,4 +1,5 @@
-__pycache__
-test.bench
-.idea/
-venv/
+# Default ignored files
+/venv/
+/.idea/
+/__pycache__/
+

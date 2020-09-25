@@ -5,6 +5,41 @@ from re import match
 
 
 class CircuitSimulator(object):
+    class IterationPrinter(object):
+        def generate_line(self, node:nodes.Node):
+            line1 = node.type
+            line2 = node.name
+            line3 = node.gate_type.ljust(8) if node.gate_type else ""
+            line3 += ', '.join(node.input_names)
+            line4 = str(node.value)
+            line = line1.ljust(11) + line2.ljust(8) + line3.ljust(20) + line4.ljust(3)
+            return line
+
+        def __init__(self, nodes):
+            self.iteration = 0
+            self.lines = [self.generate_line(node) for node in nodes]
+            header = "Type".ljust(8) + "Variable".ljust(11) + "Logic".ljust(8) + "Inputs".ljust(9) + "Initial".ljust(3)
+            self.lines.insert(0, header)
+
+        def __iter__(self):
+            for line in self.lines:
+                yield line
+
+        def __str__(self):
+            string = ""
+            for line in self:
+                string += line + "\n"
+            return string
+
+        def __call__(self, nodes):
+            # assert(len(nodes) == len(self.lines))
+            self.iteration += 1
+            self.lines[0] += "\t" + str(self.iteration)
+            i = 0
+            for node in nodes:
+                self.lines[i + 1] += "\t" + str(node.value)
+                i += 1
+
     class LineParser(object):
         def __init__(self, bench):
             self.file = bench
@@ -136,9 +171,9 @@ class CircuitSimulator(object):
                 self.nodes[input_name].output_nodes.append(self.nodes[node.name])
 
     def prompt(self):
-        for node in self.nodes.input_nodes:
-            print(node)
-        print()
+        #for node in self.nodes.input_nodes:
+            #print(node)
+        #print()
         line = self.args.testvec
         if not line:
             line = input("Start simulation with input values (return to exit):")
@@ -175,12 +210,21 @@ class CircuitSimulator(object):
     def simulate(self):
         if self.args.verbose:
             print('Simulating with the following input values:')
-            for node in self.nodes.input_nodes.values():
-                print(node)
-            print()
+            #for node in self.nodes.input_nodes.values():
+                #print(node)
+            #print()
+
+        iteration_printer = self.IterationPrinter(self.nodes)
+        #print(iteration_printer)
         for iteration in self:
-            if self.args.verbose:
-                print(iteration, "\n")
+            iteration_printer(self.nodes)
+
+        print(iteration_printer)
+
+        # if self.args.verbose
+        # for iteration in self:
+            # if self.args.verbose:
+                # print(iteration, "\n")
 
     def create_fault(self):
 
