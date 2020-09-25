@@ -12,9 +12,9 @@ class Value(object):
             self.value = 1
 
         # Final value for Ds wil be string "D" / "D'"
-        elif value == 'D' or value =='d':
-            self.value = 'D'
-        elif value == "D'" or value == "d'":
+        elif value == "D":
+            self.value = "D"
+        elif value == "D'":
             self.value = "D'"
         else:
             self.value = 'U'
