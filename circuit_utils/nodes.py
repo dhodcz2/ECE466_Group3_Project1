@@ -10,6 +10,12 @@ class Value(object):
             self.value = 0
         elif value == 1 or value == '1':
             self.value = 1
+
+        # Final value for Ds wil be string "D" / "D'"
+        elif value == "D":
+            self.value = "D"
+        elif value == "D'":
+            self.value = "D'"
         else:
             self.value = 'U'
 
@@ -23,6 +29,14 @@ class Value(object):
         elif self.value == 'U':
             if other == 'U' or other == 'u':
                 return True
+        #added D value here
+        elif self.value == 'D':
+            if other == 'd' or other == 'D':
+                return True
+        elif self.value == "D'":
+            if other == "d'" or other == "D'":
+                return True
+
         return False
 
     def __and__(self, other):
@@ -45,6 +59,10 @@ class Value(object):
             return Value(0)
         if self == 0:
             return Value(1)
+        if self == 'D':
+            return Value("D'")
+        if self =="D'":
+            return Value('D')
         return Value('U')
 
     def __str__(self):
@@ -145,8 +163,31 @@ class AndGate(Gate):
             self.value_new = Value(0)
         elif all(node == 1 for node in self.input_nodes):
             self.value_new = Value(1)
+        #D logic
+        elif all(node == 'D' for node in self.input_nodes):
+            self.value_new = Value('D')
+        elif all(node == "D'" for node in self.input_nodes):
+            self.value_new = Value("D'")
+
+        elif all(node == 'D' or node == 1 for node in self.input_nodes):
+            self.value_new = Value('D')
+        elif all(node == "D'" or node == '1' for node in self.input_nodes):
+            self.value_new = Value("D'")
+
         else:
             self.value_new = Value('U')
+
+
+
+
+class NandGate(AndGate):
+    def __init__(self, name, inputs: []):
+        super(AndGate,self).__init__(name, inputs)
+        self.type = "NAND"
+
+    def logic(self):
+        super().logic()
+        self.value_new = ~self.value_new
 
 
 class OrGate(Gate):
@@ -159,21 +200,30 @@ class OrGate(Gate):
             self.value_new = Value(1)
         elif any(node == 'U' for node in self.input_nodes):
             self.value_new = Value('U')
+
+        #D- logic for OR
+        elif all(node == 'D' for node in self.input_nodes):
+            self.value_new = Value('D')
+        elif all(node == "D'" for node in self.input_nodes):
+            self.value_new = Value("D'")
+        elif all(node == 'D' or node == 0 for node in self.input_nodes):
+            self.value_new= Value('D')
+
+        elif all(node == "D'" or node == 0 for node in self.input_nodes):
+            self.value_new = Value("D'")
+        #elif any(node == 'D'):
+
         else:
             self.value_new = Value(0)
 
-
-class NandGate(Gate):
+class NorGate(OrGate):
     def __init__(self, name, inputs: []):
-        super(NandGate, self).__init__(name, inputs)
-        self.type = "NAND"
+        super(OrGate, self).__init__(name, inputs)
+        self.type = "NOR"
 
     def logic(self):
-        if any(node == 0 for node in self.input_nodes):
-            self.value_new = Value(1)
-        elif any(node == 'U' for node in self.input_nodes):
-            self.value_new = Value('U')
-        self.value_new = Value(0)
+        super().logic() #calls or logic
+        self.value_new = ~self.value_new
 
 
 class NotGate(Gate):
@@ -185,37 +235,34 @@ class NotGate(Gate):
         self.value_new = ~self.input_nodes[0].value
 
 
-class XnorGate(Gate):
-    def __init__(self, name, inputs: []):
-        super(XnorGate, self).__init__(name, inputs)
-        self.type = "XNOR"
-
-    def logic(self):
-        pass
-        # TDDO: logic
-
-
+# Xor gate class and logic
 class XorGate(Gate):
     def __init__(self, name, inputs: []):
         super(XorGate, self).__init__(name, inputs)
         self.type = "XOR"
 
     def logic(self):
-        pass
-        # TODO: logic
+        if all(node == 1 for node in self.input_nodes):
+            self.value_new = Value(0)
+        elif all(node == 0 for node in self.input_nodes):
+            self.value_new = Value(0)
+        elif any(node == 1 or node == 0 for node in self.input_nodes):
+            self.value_new = Value(1)
+
+        else:
+            self.value_new = Value('U')
 
 
-class NorGate(Gate):
+    # XNOR is a child of Xor
+class XnorGate(XorGate):
     def __init__(self, name, inputs: []):
-        super(NorGate, self).__init__(name, inputs)
-        self.type = "NOR"
+        super(XorGate, self).__init__(name, inputs)
+        self.type = "XNOR"
 
     def logic(self):
-        if any(node == 1 for node in self.input_nodes):
-            self.value_new = Value(0)
-        if any(node == 'U' for node in self.input_nodes):
-            self.value_new = Value('U')
-        self.value_new = Value(1)
+        super().logic()
+        self.value_new = ~self.value_new
+
 
 
 class BuffGate(Gate):

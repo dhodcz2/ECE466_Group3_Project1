@@ -51,6 +51,7 @@ class CircuitSimulator(object):
             self.gate_map = {"AND": nodes.AndGate, "OR": nodes.OrGate, "NAND": nodes.NandGate, "XNOR": nodes.XnorGate,
                              "NOR": nodes.NorGate, "BUFF": nodes.BuffGate, "XOR": nodes.XorGate, "NOT": nodes.NotGate}
 
+
         def parse_file(self):
             with open(self.file) as f:
                 for line in f:
@@ -123,6 +124,8 @@ class CircuitSimulator(object):
         self.args = args
         self.parser = self.LineParser(args.bench)
         self.compile(self.parser.parse_file())
+        self.run_fault = False  # if should output fault detection
+        self.fault = None
 
     def __next__(self):
         if self.iteration == 0:
@@ -176,8 +179,32 @@ class CircuitSimulator(object):
             line = input("Start simulation with input values (return to exit):")
             if not line:
                 return False
-        for character, node in zip(line, self.nodes.input_nodes.values()):
+        # adding D or D' implimentation
+        # remove spaces
+        input_values = [letter for letter in list(str(line)) if letter!=' ']
+        final_inputs = []
+        for chars in range(len(input_values)): #check for D'
+            if input_values[chars] != 'd' and input_values[chars] !='D' :
+                if input_values[chars] != "'":
+                    final_inputs.append(input_values[chars])
+            else:
+                D_index = chars
+                if D_index +1 < len(input_values) and input_values[D_index+1] == "'":
+                    final_inputs.append("D'")
+                else:
+                    final_inputs.append(input_values[chars]) # this will always be a single D
+
+        #Debug tool to see values
+        #print(input_values, final_inputs)
+        for character, node in zip(final_inputs, self.nodes.input_nodes.values()):
             node.set(nodes.Value(character))
+
+        # asking for faulty node
+        with_fault = input("Do you want a faulty node? (y/n)")
+        if with_fault == 'y':
+            self.run_fault = True
+            self.fault = self.create_fault()
+
         return True
 
     def simulate(self):
@@ -200,12 +227,52 @@ class CircuitSimulator(object):
                 # print(iteration, "\n")
 
     def create_fault(self):
-        #     TODO: Prompt the user for for faulty node, and SA-0 or SA-1
-        pass
+
+        is_node = input("which node do you want to be faulty?")
+        found_node = False
+        # check if this node exists
+        for node in self.nodes:
+            if node.name == is_node:
+                print(f"found the node {node.name} = {node.value}")
+                found_node = node
+                break
+
+        if is_node not in self.nodes:
+            print("Not a valid node to change")
+            return False
+        else:
+            fault_value = input(f"which value do you want node {found_node.name} to be stuck at? (1/0)")
+            fault_value.upper()
+            if fault_value == '0': # f Node -sA0 mean D
+                found_node.set(nodes.Value("D"))
+            elif fault_value == '1': # Fault means Node = D'
+                found_node.set(nodes.Value("D'"))
+                #found_node.
+        return found_node
+
+
 
     def detect_fault(self):
         #     TODO: Detect any faults that have propagated to the outputs
-        pass
+        print("Fault detected by propagation of D / D'")
+        if self.fault.value == nodes.Value("D"):# SA0
+            s = f"For F = {self.fault.name}-SA0"
+        elif self.fault.value == nodes.Value("D'"):
+            s = f"For F = {self.fault.name}-SA1"
+        print(s,self.fault.name, self.fault.value)
+        # if any(node == 'D' or node == "D'" for node in self.nodes.output_nodes):
+        #     s = f" "
+        #     #print(s)
+        #     if self.fault.value == "D": # D means stuck at 0
+        #         s += f"F = {self.fault.node.name} SA-0"
+        #     elif self.fault.value == "D'": #D' means stuck at 1
+        #         s += f"F = {self.fault.node.name} SA-1"
+        #     print(s)
+        #     return True
+        # else:
+        #     return False
+
+
 
     def reset(self):
         for node in self.nodes:
