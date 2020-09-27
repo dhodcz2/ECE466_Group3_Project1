@@ -273,13 +273,16 @@ class LogicTest(unittest.TestCase):
 class AndTest(LogicTest):
     def setUp(self):
         super(AndTest, self).setUp()
+        self.node = Node(AndGate('and'))
 
     def test_1(self):
-        self.node = Node(AndGate('and'))
         self.node.input_nodes = [self.zero, self.one, self.sa1]
         self.node.logic()
         self.node.update()
         self.assertEqual(self.node, 0, (self.node.show_update()))
+
+    def test_2(self):
+        self.node.input_nodes =
 
 if __name__ == '__main__':
     unittest.main()
