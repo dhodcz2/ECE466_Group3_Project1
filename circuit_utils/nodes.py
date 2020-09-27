@@ -1,4 +1,7 @@
 import copy
+import unittest
+
+from typing import List
 
 
 class Value(object):
@@ -108,6 +111,14 @@ class Node(object):
     def value(self):
         return self.gate.value
 
+    @property
+    def input_nodes(self):
+        return self.gate.input_nodes
+
+    @input_nodes.setter
+    def input_nodes(self, other: []):
+        self.gate.input_nodes = other
+
     @value.setter
     def value(self, other: Value):
         self.gate.value = other
@@ -132,9 +143,17 @@ class Node(object):
         self.value = value
         self.value_new = value
 
+    def show_update(self):
+        result = ""
+        for node in self.input_nodes:
+            node: Node
+            result += str(node.value) + ", "
+        result += "equals " + str(self.value)
+        return result
+
 
 class AndGate(Gate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(AndGate, self).__init__(name, inputs)
         self.type = "AND"
 
@@ -152,7 +171,7 @@ class AndGate(Gate):
 
 
 class NandGate(AndGate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(AndGate, self).__init__(name, inputs)
         self.type = "NAND"
 
@@ -162,7 +181,7 @@ class NandGate(AndGate):
 
 
 class OrGate(Gate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(OrGate, self).__init__(name, inputs)
         self.type = "OR"
 
@@ -182,7 +201,7 @@ class OrGate(Gate):
 
 
 class NorGate(OrGate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(OrGate, self).__init__(name, inputs)
         self.type = "NOR"
 
@@ -192,7 +211,7 @@ class NorGate(OrGate):
 
 
 class NotGate(Gate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(NotGate, self).__init__(name, inputs)
         self.type = "NOT"
 
@@ -201,7 +220,7 @@ class NotGate(Gate):
 
 
 class XorGate(Gate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(XorGate, self).__init__(name, inputs)
         self.type = "XOR"
 
@@ -217,7 +236,7 @@ class XorGate(Gate):
 
 
 class XnorGate(XorGate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(XorGate, self).__init__(name, inputs)
         self.type = "XNOR"
 
@@ -227,9 +246,40 @@ class XnorGate(XorGate):
 
 
 class BuffGate(Gate):
-    def __init__(self, name, inputs: []):
+    def __init__(self, name, inputs=[]):
         super(BuffGate, self).__init__(name, inputs)
         self.type = "BUFF"
 
     def logic(self):
         self.value_new = self.input_nodes[0].value
+
+
+
+class LogicTest(unittest.TestCase):
+    def setUp(self) :
+        super(LogicTest, self).setUp()
+        self.zero = Node(Gate('zero'))
+        self.zero.value = Value(0)
+        self.one = Node(Gate('one'))
+        self.one.value = Value(1)
+        self.unknown = Node(Gate('unknown'))
+        self.unknown.value = Value('U')
+        self.sa0 = Node(Gate('sa0'))
+        self.sa0.value = Value('D')
+        self.sa1 = Node(Gate('sa1'))
+        self.sa1.value = Value("D'")
+
+
+class AndTest(LogicTest):
+    def setUp(self):
+        super(AndTest, self).setUp()
+
+    def test_1(self):
+        self.node = Node(AndGate('and'))
+        self.node.input_nodes = [self.zero, self.one, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 0, (self.node.show_update()))
+
+if __name__ == '__main__':
+    unittest.main()
