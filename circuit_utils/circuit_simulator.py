@@ -101,7 +101,7 @@ class CircuitSimulator(object):
                 return self.input_nodes[item]
             elif item in self.output_nodes:
                 return self.output_nodes[item]
-            return KeyError
+            raise KeyError
 
         def __iter__(self):
             for node in self.input_nodes.values():
@@ -137,7 +137,7 @@ class CircuitSimulator(object):
             node.update()
         if self.iteration == 0:
             self.iteration += 1
-            return  "Initial values" + str(self.nodes)
+            return "Initial values" + str(self.nodes)
         return "Iteration # " + str(self.iteration) + ": " + str(self.nodes)
 
     def __iter__(self):
@@ -200,30 +200,42 @@ class CircuitSimulator(object):
         self.detect_faults()
 
     def create_fault(self):
-        while True:
-            node_name = input("Which node do you want to be faulty? (return to skip) ")
-            if node_name:
+        fault_pattern = "(.)+=([0,1])"
+        if self.args.fault:
+            _match = match(fault_pattern, self.args.fault)
+
+            if (_match := match(fault_pattern, self.args.fault)):
                 try:
-                    self.faulty_node = self.nodes[node_name]
-                    while True:
-                        fault_value = input(f"Which value do you want node {self.faulty_node.name} to be stuck at? (1/0) ")
-                        if fault_value == '0':  # f Node -sA0 mean D
-                            self.faulty_node.set(nodes.Value("D"))
-                            break
-                        elif fault_value == '1':  # Fault means Node = D'
-                            self.faulty_node.set(nodes.Value("D'"))
-                            break
-                        else:
-                            print("Invalid value: try again")
+                    self.faulty_node: nodes.Node = self.nodes[_match[1]]
+                    value = {"0": nodes.Value('D'), "1": nodes.Value("D'")}[_match[2]]
+                    self.faulty_node.set(value)
+                except KeyError:
+                    print("Node name not found in nodes")
+        if not self.faulty_node:
+            while True:
+                node_name = input("Which node do you want to be faulty? (return to skip) ")
+                if node_name == "":
                     break
-                except AttributeError as e:
-                    print("Node name not found: try again")
-            else:
+                try:
+                    self.faulty_node: nodes.Node = self.nodes[node_name]
+                except KeyError:
+                    print("Name not found in nodes")
+                    continue
+                while True:
+                    fault_value = input(f"Which value do you want node {self.faulty_node.name} to be stuck at? (1/0) ")
+                    try:
+                        self.faulty_node.set(
+                            {"0" : nodes.Value('D'), "1" : nodes.Value("D'")}[fault_value]
+                        )
+                        break
+                    except KeyError:
+                        print("Invalid value: try again")
                 break
 
     def detect_faults(self):
         if self.faulty_node:
-            print(f"Fault {self.faulty_node.name}-SA-{0 if self.faulty_node.value == '0' or self.faulty_node.value == 'D' else 1} ", sep="")
+            print(f"Fault {self.faulty_node.name}-SA-",
+                  0 if self.faulty_node.value == 'D' else 1 if self.faulty_node.value == "D'" else ValueError(), sep='')
             if any(node == "D" or node == "D'" for node in self.nodes.output_nodes.values()):
                 print(f"detected with input {self.args.testvec}, at output nodes:")
                 faulty_outputs = [node for node in self.nodes.output_nodes.values() if node == "D" or node == "D'"]
@@ -231,6 +243,7 @@ class CircuitSimulator(object):
                     print(str(node) + "\n")
             else:
                 print(f"Undetected with {self.args.testvec}")
+
 
     def reset(self):
         for node in self.nodes:
