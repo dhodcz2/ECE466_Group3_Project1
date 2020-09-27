@@ -223,7 +223,7 @@ class CircuitSimulator(object):
 
     def detect_faults(self):
         if self.faulty_node:
-            print(f"Fault {self.faulty_node.name}-SA-{0 if self.faulty_node.value == 'D' else 1} ", sep="")
+            print(f"Fault {self.faulty_node.name}-SA-{0 if self.faulty_node.value == '0' else 1} ", sep="")
             if any(node == "D" or node == "D'" for node in self.nodes.output_nodes.values()):
                 print(f"detected with input {self.args.testvec}, at output nodes:")
                 faulty_outputs = [node for node in self.nodes.output_nodes.values() if node == "D" or node == "D'"]
