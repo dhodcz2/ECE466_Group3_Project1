@@ -173,7 +173,7 @@ class CircuitSimulator(object):
             line = input("Start simulation with input values (return to exit):")
             if not line:
                 return False
-        # adding D or D' implimentation
+        # adding D or D' implementation
         # remove spaces
         input_values = [letter for letter in list(str(line)) if letter != ' ']
         final_inputs = []
@@ -225,7 +225,7 @@ class CircuitSimulator(object):
         if self.faulty_node:
             print(f"Fault {self.faulty_node.name}-SA-{0 if self.faulty_node.value == 'D' else 1} ", sep="")
             if any(node == "D" or node == "D'" for node in self.nodes.output_nodes.values()):
-                print( f"detected with input {self.args.testvec}, at output nodes:")
+                print(f"detected with input {self.args.testvec}, at output nodes:")
                 faulty_outputs = [node for node in self.nodes.output_nodes.values() if node == "D" or node == "D'"]
                 for node in faulty_outputs:
                     print(str(node) + "\n")
