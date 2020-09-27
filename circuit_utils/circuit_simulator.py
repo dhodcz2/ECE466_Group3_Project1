@@ -125,9 +125,6 @@ class CircuitSimulator(object):
         self.faulty_node = None
 
     def __next__(self):
-        if self.iteration == 0:
-            self.iteration += 1
-            return "Inital values:" + str(self.nodes)
         self.iteration += 1
         updated_nodes = 0
         for node in self.nodes:
@@ -138,10 +135,13 @@ class CircuitSimulator(object):
             raise StopIteration
         for node in self.nodes:
             node.update()
+        if self.iteration == 0:
+            self.iteration += 1
+            return  "Initial values" + str(self.nodes)
         return "Iteration # " + str(self.iteration) + ": " + str(self.nodes)
 
     def __iter__(self):
-        self.iteration = 0
+        self.iteration = -1
         return self
 
     def __str__(self):
