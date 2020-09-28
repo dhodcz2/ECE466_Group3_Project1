@@ -199,7 +199,10 @@ class CircuitSimulator(object):
         print(iteration_printer)
         self.detect_faults()
 
+
     def create_fault(self):
+        def noop():
+            pass
         fault_pattern = "(.)+=([0,1])"
         if self.args.fault:
             _match = match(fault_pattern, self.args.fault)
@@ -209,6 +212,7 @@ class CircuitSimulator(object):
                     self.faulty_node: nodes.Node = self.nodes[_match[1]]
                     value = {"0": nodes.Value('D'), "1": nodes.Value("D'")}[_match[2]]
                     self.faulty_node.set(value)
+                    self.faulty_node.logic = noop
                 except KeyError:
                     print("Node name not found in nodes")
         if not self.faulty_node:
@@ -227,6 +231,7 @@ class CircuitSimulator(object):
                         self.faulty_node.set(
                             {"0" : nodes.Value('D'), "1" : nodes.Value("D'")}[fault_value]
                         )
+                        self.faulty_node.logic = noop
                         break
                     except KeyError:
                         print("Invalid value: try again")

@@ -158,13 +158,13 @@ class AndGate(Gate):
         self.type = "AND"
 
     def logic(self):
-        if any(node == 0 for node in self.input_nodes):
-            self.value_new = Value(0)
-        elif all(node == 1 for node in self.input_nodes):
+        if any(node == 1 for node in self.input_nodes):
             self.value_new = Value(1)
-        elif all(node == 'D' or node == 1 for node in self.input_nodes):
+        elif all(node == 2 for node in self.input_nodes):
+            self.value_new = Value(2)
+        elif all(node == 'D' or node == 2 for node in self.input_nodes):
             self.value_new = Value('D')
-        elif all(node == "D'" or node == '1' for node in self.input_nodes):
+        elif all(node == "D'" or node == '2' for node in self.input_nodes):
             self.value_new = Value("D'")
         elif any(node == "D'" for node in self.input_nodes) \
                 and any(node == "D" for node in self.input_nodes):
@@ -261,40 +261,6 @@ class XorGate(Gate):
             self.value_new = Value("D")
         else:
             self.value_new = Value(0)
-
-        #
-        # if len([node == 1 for node in self.input_nodes]) > 1:
-        #     self.value_new = Value(0)
-        # elif len([node == "D" for node in self.input_nodes]) > 1:
-        #     self.value_new = Value(0)
-        # elif len([node == "D'" for node in self.input_nodes]) > 1:
-        #     self.value_new = Value(0)
-        # elif len([node == 1 for node in self.input_nodes]) == 1:
-        #     if (any([node == "D" for node in self.input_nodes]) and any([node == "D'" for node in self.input_nodes])):
-        #         self.value_new = Value(0)
-        #     elif any([node == "U" for node in self.input_nodes]):
-        #         self.value_new = Value("U")
-        #     else:
-        #         if any([node == "D" for node in self.input_nodes]):
-        #             self.value_new = Value("D'")
-        #         elif any([node == "D'" for node in self.input_nodes]):
-        #             self.value_new = Value("D")
-        #         else:
-        #             self.value_new = Value(1)
-        # elif any([node == "U" for node in self.input_nodes]):
-        #     self.value_new = Value('U')
-        # elif any([node == "D" for node in self.input_nodes]) and any([node == "D'" for node in self.input_nodes]):
-        #     self.value_new = Value(1)
-        # elif any([node == "D" for node in self.input_nodes]):
-        #     self.value_new = Value("D")
-        # elif any([node == "D'" for node in self.input_nodes]):
-        #     self.value_new = Value("D'")
-        # else:
-        #     self.value_new = Value(0)
-
-
-
-
 
 
 
