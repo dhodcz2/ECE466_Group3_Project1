@@ -166,6 +166,9 @@ class AndGate(Gate):
             self.value_new = Value('D')
         elif all(node == "D'" or node == '1' for node in self.input_nodes):
             self.value_new = Value("D'")
+        elif any(node == "D'" for node in self.input_nodes) \
+                and any(node == "D" for node in self.input_nodes):
+            self.value_new = Value(0)
         else:
             self.value_new = Value('U')
 
@@ -196,6 +199,9 @@ class OrGate(Gate):
             self.value_new = Value('D')
         elif all(node == "D'" or node == 0 for node in self.input_nodes):
             self.value_new = Value("D'")
+        elif any(node == "D'" for node in self.input_nodes) \
+                and any(node == "D" for node in self.input_nodes):
+            self.value_new = Value(1)
         else:
             self.value_new = Value(0)
 
@@ -225,14 +231,71 @@ class XorGate(Gate):
         self.type = "XOR"
 
     def logic(self):
-        if all(node == 1 for node in self.input_nodes):
+        zeros =([node == 0 for node in self.input_nodes].count(True))
+        ones = ([node == 1 for node in self.input_nodes].count(True))
+        unknowns = ([node == 'U' for node in self.input_nodes].count(True))
+        sa1s = ([node == "D'" for node in self.input_nodes].count(True))
+        sa0s = ([node == "D" for node in self.input_nodes].count(True))
+
+        if ones > 1 or sa1s > 1 or sa0s > 1:
             self.value_new = Value(0)
-        elif all(node == 0 for node in self.input_nodes):
-            self.value_new = Value(0)
-        elif any(node == 1 or node == 0 for node in self.input_nodes):
-            self.value_new = Value(1)
-        else:
+        elif ones == 1:
+            if sa1s and sa0s:
+                self.value_new = Value(0)
+            elif unknowns:
+                self.value_new = Value('U')
+            else:
+                if sa1s:
+                    self.value_new = Value("D")
+                elif sa0s:
+                    self.value_new = Value("D'")
+                else:
+                    self.value_new = Value(1)
+        elif unknowns:
             self.value_new = Value('U')
+        elif sa1s and sa0s:
+            self.value_new = Value(1)
+        elif sa1s:
+            self.value_new = Value("D'")
+        elif sa0s:
+            self.value_new = Value("D")
+        else:
+            self.value_new = Value(0)
+
+        #
+        # if len([node == 1 for node in self.input_nodes]) > 1:
+        #     self.value_new = Value(0)
+        # elif len([node == "D" for node in self.input_nodes]) > 1:
+        #     self.value_new = Value(0)
+        # elif len([node == "D'" for node in self.input_nodes]) > 1:
+        #     self.value_new = Value(0)
+        # elif len([node == 1 for node in self.input_nodes]) == 1:
+        #     if (any([node == "D" for node in self.input_nodes]) and any([node == "D'" for node in self.input_nodes])):
+        #         self.value_new = Value(0)
+        #     elif any([node == "U" for node in self.input_nodes]):
+        #         self.value_new = Value("U")
+        #     else:
+        #         if any([node == "D" for node in self.input_nodes]):
+        #             self.value_new = Value("D'")
+        #         elif any([node == "D'" for node in self.input_nodes]):
+        #             self.value_new = Value("D")
+        #         else:
+        #             self.value_new = Value(1)
+        # elif any([node == "U" for node in self.input_nodes]):
+        #     self.value_new = Value('U')
+        # elif any([node == "D" for node in self.input_nodes]) and any([node == "D'" for node in self.input_nodes]):
+        #     self.value_new = Value(1)
+        # elif any([node == "D" for node in self.input_nodes]):
+        #     self.value_new = Value("D")
+        # elif any([node == "D'" for node in self.input_nodes]):
+        #     self.value_new = Value("D'")
+        # else:
+        #     self.value_new = Value(0)
+
+
+
+
+
 
 
 class XnorGate(XorGate):
@@ -282,7 +345,122 @@ class AndTest(LogicTest):
         self.assertEqual(self.node, 0, (self.node.show_update()))
 
     def test_2(self):
-        self.node.input_nodes =
+        self.node.input_nodes = [self.sa1, self.sa0]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 0, (self.node.show_update()))
 
+    def test_3(self):
+        self.node.input_nodes = [self.sa1, self.one]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D'", (self.node.show_update()))
+
+    def test_4(self):
+        self.node.input_nodes = [self.sa0, self.one]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D", (self.node.show_update()))
+
+class NandTest(LogicTest):
+    def setUp(self):
+        super(NandTest, self).setUp()
+        self.node = Node(NandGate('nand'))
+
+    def test_1(self):
+        self.node.input_nodes = [self.zero, self.one, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_2(self):
+        self.node.input_nodes = [self.sa1, self.sa0]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_3(self):
+        self.node.input_nodes = [self.sa1, self.one]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D", (self.node.show_update()))
+
+    def test_4(self):
+        self.node.input_nodes = [self.sa0, self.one]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D'", (self.node.show_update()))
+
+
+class OrTest(LogicTest):
+    def setUp(self):
+        super(OrTest, self).setUp()
+        self.node = Node(OrGate('nand'))
+
+    def test_1(self):
+        self.node.input_nodes = [self.zero, self.one, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_2(self):
+        self.node.input_nodes = [self.sa1, self.sa0]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_3(self):
+        self.node.input_nodes = [self.sa1, self.zero]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D'", (self.node.show_update()))
+
+    def test_4(self):
+        self.node.input_nodes = [self.sa0, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_5(self):
+        self.node.input_nodes = [self.sa0, self.unknown]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 'U', (self.node.show_update()))
+
+
+class XorTest(LogicTest):
+    def setUp(self):
+        super(XorTest, self).setUp()
+        self.node = Node(XorGate('xor'))
+
+    def test_1(self):
+        self.node.input_nodes = [self.zero, self.one, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D", (self.node.show_update()))
+
+    def test_2(self):
+        self.node.input_nodes = [self.sa1, self.sa0]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 1, (self.node.show_update()))
+
+    def test_3(self):
+        self.node.input_nodes = [self.sa1, self.zero]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, "D'", (self.node.show_update()))
+
+    def test_4(self):
+        self.node.input_nodes = [self.sa1, self.sa1]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 0, (self.node.show_update()))
+
+    def test_5(self):
+        self.node.input_nodes = [self.sa0, self.unknown]
+        self.node.logic()
+        self.node.update()
+        self.assertEqual(self.node, 'U', (self.node.show_update()))
 if __name__ == '__main__':
     unittest.main()
