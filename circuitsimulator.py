@@ -1,6 +1,6 @@
 from _collections import OrderedDict
-from circuit_utils import nodes
-from circuit_utils import exceptions
+import nodes
+import exceptions
 from re import match
 
 
@@ -199,10 +199,10 @@ class CircuitSimulator(object):
         print(iteration_printer)
         self.detect_faults()
 
-
     def create_fault(self):
         def noop():
             pass
+
         fault_pattern = "(.)+=([0,1])"
         if self.args.fault:
             _match = match(fault_pattern, self.args.fault)
@@ -229,7 +229,7 @@ class CircuitSimulator(object):
                     fault_value = input(f"Which value do you want node {self.faulty_node.name} to be stuck at? (1/0) ")
                     try:
                         self.faulty_node.set(
-                            {"0" : nodes.Value('D'), "1" : nodes.Value("D'")}[fault_value]
+                            {"0": nodes.Value('D'), "1": nodes.Value("D'")}[fault_value]
                         )
                         self.faulty_node.logic = noop
                         break
@@ -248,7 +248,6 @@ class CircuitSimulator(object):
                     print(str(node) + "\n")
             else:
                 print(f"Undetected with {self.args.testvec}")
-
 
     def reset(self):
         for node in self.nodes:

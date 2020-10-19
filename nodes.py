@@ -158,13 +158,13 @@ class AndGate(Gate):
         self.type = "AND"
 
     def logic(self):
-        if any(node == 1 for node in self.input_nodes):
+        if any(node == 0 for node in self.input_nodes):
+            self.value_new = Value(0)
+        elif all(node == 1 for node in self.input_nodes):
             self.value_new = Value(1)
-        elif all(node == 2 for node in self.input_nodes):
-            self.value_new = Value(2)
-        elif all(node == 'D' or node == 2 for node in self.input_nodes):
+        elif all(node == 'D' or node == 1 for node in self.input_nodes):
             self.value_new = Value('D')
-        elif all(node == "D'" or node == '2' for node in self.input_nodes):
+        elif all(node == "D'" or node == '1' for node in self.input_nodes):
             self.value_new = Value("D'")
         elif any(node == "D'" for node in self.input_nodes) \
                 and any(node == "D" for node in self.input_nodes):
@@ -231,7 +231,7 @@ class XorGate(Gate):
         self.type = "XOR"
 
     def logic(self):
-        zeros =([node == 0 for node in self.input_nodes].count(True))
+        zeros = ([node == 0 for node in self.input_nodes].count(True))
         ones = ([node == 1 for node in self.input_nodes].count(True))
         unknowns = ([node == 'U' for node in self.input_nodes].count(True))
         sa1s = ([node == "D'" for node in self.input_nodes].count(True))
@@ -263,7 +263,6 @@ class XorGate(Gate):
             self.value_new = Value(0)
 
 
-
 class XnorGate(XorGate):
     def __init__(self, name, inputs=[]):
         super(XorGate, self).__init__(name, inputs)
@@ -283,9 +282,8 @@ class BuffGate(Gate):
         self.value_new = self.input_nodes[0].value
 
 
-
 class LogicTest(unittest.TestCase):
-    def setUp(self) :
+    def setUp(self):
         super(LogicTest, self).setUp()
         self.zero = Node(Gate('zero'))
         self.zero.value = Value(0)
@@ -327,6 +325,7 @@ class AndTest(LogicTest):
         self.node.logic()
         self.node.update()
         self.assertEqual(self.node, "D", (self.node.show_update()))
+
 
 class NandTest(LogicTest):
     def setUp(self):
@@ -428,5 +427,7 @@ class XorTest(LogicTest):
         self.node.logic()
         self.node.update()
         self.assertEqual(self.node, 'U', (self.node.show_update()))
+
+
 if __name__ == '__main__':
     unittest.main()
